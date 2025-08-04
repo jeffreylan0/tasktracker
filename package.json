@@ -1,0 +1,10 @@
+"dependencies": {
+  "@notionhq/client": "^2.2.15",
+  "@supabase/supabase-js": "^2.43.5",
+  "inngest": "^3.19.4",
+  "next": "14.2.4",
+  "pino": "^9.2.0",
+  "react": "^18",
+  "react-dom": "^18",
+  "sharp": "^0.33.4"
+}
