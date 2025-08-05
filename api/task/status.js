@@ -1,5 +1,5 @@
 // File: api/task/status.js
-// Description: [GET] Fetches task state, now reading duration from the Notion page property.
+// Description: [GET] Fetches task state, with enhanced error handling for Notion properties.
 
 import { supabase } from '../lib/supabaseClient';
 import { validateToken } from '../lib/auth';
@@ -23,16 +23,38 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch the page from Notion to get its properties.
-    const notionPage = await notion.pages.retrieve({ page_id: pageId });
+    // --- NEW, MORE ROBUST LOGIC ---
 
-    // 2. Extract the duration from the "Duration" property.
-    const durationProperty = notionPage.properties['Duration'];
-    if (!durationProperty || durationProperty.type !== 'number' || durationProperty.number === null) {
-      throw new Error('A "Duration" number property must be set on the Notion page (and is assumed to be in minutes).');
+    // 1. Fetch the page from Notion.
+    let notionPage;
+    try {
+        notionPage = await notion.pages.retrieve({ page_id: pageId });
+    } catch (e) {
+        // This catch block handles errors like incorrect API keys or permissions.
+        console.error("Notion API Error:", e.body);
+        throw new Error(`Could not retrieve page from Notion. Check that your integration has access to the page and that the NOTION_API_KEY is correct. Original error: ${e.code}`);
     }
+
+    // For debugging, let's log the properties object to the Vercel console.
+    console.log("Notion Page Properties Received:", notionPage.properties);
+
+    // 2. Safely extract the duration from the "Duration" property.
+    const durationProperty = notionPage.properties['Duration'];
+
+    if (!durationProperty) {
+      throw new Error('Property "Duration" not found on the Notion page. Please check for typos or case-sensitivity.');
+    }
+    if (durationProperty.type !== 'number') {
+      throw new Error(`Property "Duration" is not a 'Number' type. It is currently a '${durationProperty.type}' type. Please change it in Notion.`);
+    }
+    if (durationProperty.number === null || durationProperty.number === undefined) {
+      throw new Error('The "Duration" property is empty. Please enter a number (in minutes).');
+    }
+
     const durationInMinutes = durationProperty.number;
     const durationInSeconds = durationInMinutes * 60;
+
+    // --- END OF NEW LOGIC ---
 
     // 3. Check our own database for an existing task record.
     const { data: task, error: dbError } = await supabase
@@ -60,7 +82,8 @@ export default async function handler(req, res) {
       });
     }
   } catch (e) {
-    console.error('Error fetching task status:', e.message);
+    // The new specific error messages from the try block will be sent here.
+    console.error('Error in status endpoint:', e.message);
     return res.status(500).json({ message: `Server Error: ${e.message}` });
   }
 }
