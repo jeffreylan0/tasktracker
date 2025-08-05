@@ -1,6 +1,3 @@
-// File: api/task/toggle.js
-// Description: [POST] Toggles the state of a task (start, pause, resume).
-
 import { supabase } from '../lib/supabaseClient';
 import { validateToken } from '../lib/auth';
 import { Client } from '@notionhq/client';
@@ -12,15 +9,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
+  // Token is still required for all write operations.
   const { isValid, error: authError } = validateToken(req);
   if (!isValid) {
     return res.status(401).json({ message: authError });
   }
 
-  // The duration is now passed from the frontend after it's fetched by the status endpoint.
   const { pageId, duration_sec } = req.body;
   if (!pageId) {
-    return res.status(400).json({ message: 'pageId is required.' });
+    return res.status(400).json({ message: 'pageId is required in the request body.' });
   }
 
   try {
@@ -37,9 +34,6 @@ export default async function handler(req, res) {
     let notionStatusUpdate = null;
 
     if (!currentTask || currentTask.state === 'Not started') {
-      if (!duration_sec) {
-         return res.status(400).json({ message: 'duration_sec is required for new tasks.' });
-      }
       const taskData = {
         notion_page_id: pageId,
         duration_sec: duration_sec,
@@ -78,9 +72,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // Return the full record, ensuring duration_sec is included from the original task state
-    updatedTaskRecord.duration_sec = currentTask ? currentTask.duration_sec : duration_sec;
-    return res.status(200).json(updatedTaskRecord);
+    // Ensure the response includes all necessary fields for the frontend state.
+    const finalResponse = {
+        ...updatedTaskRecord,
+        pageId: pageId,
+        duration_sec: currentTask ? currentTask.duration_sec : duration_sec,
+    };
+
+    return res.status(200).json(finalResponse);
 
   } catch (e) {
     console.error('Error toggling task state:', e.message);

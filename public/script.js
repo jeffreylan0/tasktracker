@@ -1,19 +1,31 @@
-// File: public/script.js
 document.addEventListener('DOMContentLoaded', () => {
     const coverDiv = document.getElementById('cover');
     const timerDisplay = document.getElementById('timer-display');
     const controlButton = document.getElementById('control-button');
-    const statusText = document.getElementById('status-text');
     const widgetContainer = document.getElementById('widget-container');
 
     let timerInterval = null;
     let taskState = {};
     const params = new URLSearchParams(window.location.search);
-    const PAGE_ID = params.get('pageId');
+    // The ONLY parameter we need now is the secret token.
     const TOKEN = params.get('token');
 
+    // --- NEW: Theme Detection ---
+    // Detects Notion's theme and applies a 'dark' class to the body.
+    function detectTheme() {
+        // Notion may pass its theme in the URL fragment
+        if (window.location.hash.includes('theme=dark')) {
+            document.body.classList.add('dark');
+        }
+        // Also respect the OS-level preference
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            document.body.classList.add('dark');
+        }
+    }
+
     const api = {
-        get: (endpoint, queryParams) => fetch(`${endpoint}?${new URLSearchParams(queryParams)}`),
+        get: (endpoint) => fetch(endpoint), // No query params needed for initial status
         post: (endpoint, body) => fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -22,14 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function initialize() {
-        if (!PAGE_ID || !TOKEN) {
-            showError("Config Error: pageId or token missing in URL.");
+        detectTheme(); // Set theme first
+
+        if (!TOKEN) {
+            showError("Config Error: 'token' parameter is missing in URL.");
             return;
         }
 
         try {
-            // The duration parameter is no longer sent from the client
-            const response = await api.get('/api/task/status', { pageId: PAGE_ID, token: TOKEN });
+            // The API now infers the pageId from the Referer header.
+            const response = await api.get('/api/task/status');
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.message || "Failed to fetch status.");
@@ -53,18 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switch (taskState.state) {
             case 'Not started':
-                setButtonState('Start', 'state-start');
-                statusText.textContent = 'Ready to begin?';
+                setButtonState('Start');
                 updateTimerDisplay(taskState.duration_sec);
                 break;
             case 'Working':
-                setButtonState('Pause', 'state-pause');
-                statusText.textContent = 'In progress...';
+                setButtonState('Pause');
                 startClientSideTimer();
                 break;
             case 'Paused':
-                setButtonState('Resume', 'state-resume');
-                statusText.textContent = 'Paused. Take a break!';
+                setButtonState('Resume');
                 updateTimerDisplay(taskState.duration_sec - taskState.elapsed_sec);
                 break;
         }
@@ -73,9 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
     controlButton.addEventListener('click', async () => {
         controlButton.disabled = true;
         try {
-            // Now, we pass the duration that was fetched from the status endpoint
+            // For all POST requests, we must include the pageId and token.
             const response = await api.post('/api/task/toggle', {
-                pageId: PAGE_ID,
+                pageId: taskState.pageId,
                 token: TOKEN,
                 duration_sec: taskState.duration_sec
             });
@@ -85,11 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUI();
 
             if (taskState.state !== 'Not started') {
-                 api.post('/api/image/generate', { pageId: PAGE_ID, token: TOKEN });
+                 api.post('/api/image/generate', { pageId: taskState.pageId, token: TOKEN });
             }
         } catch (err) {
             console.error(err);
-            statusText.textContent = "An error occurred.";
         } finally {
             controlButton.disabled = false;
         }
@@ -109,17 +119,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearInterval(timerInterval);
                 updateTimerDisplay(0);
                 widgetContainer.style.display = 'none';
-                await api.post('/api/task/complete', { pageId: PAGE_ID, token: TOKEN });
+                await api.post('/api/task/complete', { pageId: taskState.pageId, token: TOKEN });
                 return;
             }
             updateTimerDisplay(remaining);
         }, 1000);
     }
 
-    function setButtonState(text, cssClass, disabled = false) {
+    function setButtonState(text) {
         controlButton.textContent = text;
-        controlButton.className = cssClass;
-        controlButton.disabled = disabled;
     }
 
     function updateTimerDisplay(seconds) {
