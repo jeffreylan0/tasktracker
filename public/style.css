@@ -1,0 +1,85 @@
+/* File: public/style.css */
+body, html {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: transparent;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.widget-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #f1f2f5; /* Notion's light gray background */
+}
+
+.cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(0.6);
+    transform: scale(1.1);
+    transition: background-image 0.5s ease-in-out;
+}
+
+.overlay {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.timer-display {
+    font-size: clamp(1.5rem, 10vw, 2.5rem);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 1rem;
+}
+
+#control-button {
+    border: none;
+    padding: 10px 24px;
+    border-radius: 9999px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: white;
+    white-space: nowrap;
+}
+
+#control-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#control-button.state-start { background-color: #2ea44f; }
+#control-button.state-start:hover:not(:disabled) { background-color: #2c974b; }
+
+#control-button.state-pause { background-color: #e3b341; }
+#control-button.state-pause:hover:not(:disabled) { background-color: #cfa23d; }
+
+#control-button.state-resume { background-color: #0d6efd; }
+#control-button.state-resume:hover:not(:disabled) { background-color: #0b5ed7; }
+
+#control-button.state-completed { background-color: #6e7781; }
+
+#status-text {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}

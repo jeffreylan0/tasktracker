@@ -1,29 +1,18 @@
+// File: package.json
 {
   "name": "tasktracker",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "A dynamic timer and progress visualization widget for Notion pages.",
+  "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "@notionhq/client": "^2.2.15",
     "@supabase/supabase-js": "^2.43.5",
-    "inngest": "^3.19.4",
-    "next": "14.2.4",
-    "pino": "^9.2.0",
-    "react": "^18",
-    "react-dom": "^18",
     "sharp": "^0.33.4"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4",
-    "typescript": "^5"
   }
 }
