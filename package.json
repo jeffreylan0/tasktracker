@@ -1,6 +1,5 @@
-// File: package.json
 {
-  "name": "tasktracker",
+  "name": "notion-timer-app",
   "version": "1.0.0",
   "description": "A dynamic timer and progress visualization widget for Notion pages.",
   "main": "index.js",
